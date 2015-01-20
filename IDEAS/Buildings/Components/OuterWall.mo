@@ -1,25 +1,8 @@
 within IDEAS.Buildings.Components;
 model OuterWall "Opaque building envelope construction"
 
-  extends IDEAS.Buildings.Components.Interfaces.StateWall;
+  extends IDEAS.Buildings.Components.Interfaces.StateWallNoSol;
 
-  replaceable parameter Data.Constructions.CavityWall constructionType
-    constrainedby Data.Interfaces.Construction(final insulationType=
-        insulationType, final insulationTickness=insulationThickness)
-    "Type of building construction" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,72},{-34,76}})),
-    Dialog(group="Construction details"));
-
-  replaceable parameter Data.Insulation.Rockwool insulationType constrainedby
-    Data.Interfaces.Insulation(final d=insulationThickness)
-    "Type of thermal insulation" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,84},{-34,88}})),
-    Dialog(group="Construction details"));
-  parameter Modelica.SIunits.Length insulationThickness=0.05
-    "Thermal insulation thickness"
-    annotation (Dialog(group="Construction details"));
   parameter Modelica.SIunits.Area AWall "Total wall area";
   parameter Modelica.SIunits.Angle inc
     "Inclination of the wall, i.e. 90deg denotes vertical";
@@ -28,12 +11,18 @@ model OuterWall "Opaque building envelope construction"
 
   final parameter Real U_value=1/(1/8 + sum(constructionType.mats.R) + 1/25)
     "Wall U-value";
-  final parameter Modelica.SIunits.Power QNom=U_value*AWall*(273.15 + 21 - sim.city.Tdes)
+  final parameter Modelica.SIunits.Power QNom=U_value*AWall*(273.15 + 21 - sim.Tdes)
     "Design heat losses at reference outdoor temperature";
+
+  parameter Modelica.SIunits.Temperature T_start=293.15
+    "Start temperature for each of the layers";
 
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a port_emb
     "port for gains by embedded active layers"
     annotation (Placement(transformation(extent={{-10,-110},{10,-90}})));
+
+  Modelica.SIunits.Power QSolIrr = (radSol.solDir + radSol.solDif)
+    "Total solar irradiance";
 
   //protected
   IDEAS.Climate.Meteo.Solar.RadSol radSol(
@@ -47,7 +36,8 @@ model OuterWall "Opaque building envelope construction"
     final inc=inc,
     final nLay=constructionType.nLay,
     final mats=constructionType.mats,
-    final locGain=constructionType.locGain)
+    final locGain=constructionType.locGain,
+    T_start=ones(constructionType.nLay)*T_start)
     "declaration of array of resistances and capacitances for wall simulation"
     annotation (Placement(transformation(extent={{-10,-40},{10,-20}})));
   IDEAS.Buildings.Components.BaseClasses.ExteriorConvection extCon(final A=
@@ -62,11 +52,13 @@ model OuterWall "Opaque building envelope construction"
        AWall)
     "determination of absorbed solar radiation by wall based on incident radiation"
     annotation (Placement(transformation(extent={{-20,-40},{-40,-20}})));
-  IDEAS.Buildings.Components.BaseClasses.ExteriorHeatRadidation extRad(final A=
+  IDEAS.Buildings.Components.BaseClasses.ExteriorHeatRadiation extRad(final A=
         AWall, inc=inc)
     "determination of radiant heat exchange with the environment and sky"
     annotation (Placement(transformation(extent={{-20,-20},{-40,0}})));
 
+  outer SimInfoManager sim "Simulation information manager for climate data"
+    annotation (Placement(transformation(extent={{36,-102},{56,-82}})));
 equation
   connect(radSol.solDir, solAbs.solDir) annotation (Line(
       points={{-50,-24},{-40,-24}},
@@ -105,12 +97,12 @@ equation
       points={{0,-100},{0,-40}},
       color={191,0,0},
       smooth=Smooth.None));
-  connect(intCon.port_b, surfCon_a) annotation (Line(
-      points={{40,-30},{50,-30}},
+  connect(intCon.port_b, propsBus_a.surfCon) annotation (Line(
+      points={{40,-30},{46,-30},{46,40},{50,40}},
       color={191,0,0},
       smooth=Smooth.None));
-  connect(layMul.port_b, surfRad_a) annotation (Line(
-      points={{10,-30},{16,-30},{16,-60},{50,-60}},
+  connect(layMul.port_b, propsBus_a.surfRad) annotation (Line(
+      points={{10,-30},{16,-30},{16,40},{50,40}},
       color={191,0,0},
       smooth=Smooth.None));
   connect(layMul.iEpsSw_b, propsBus_a.epsSw) annotation (Line(
@@ -128,7 +120,7 @@ equation
       index=1,
       extent={{6,3},{6,3}}));
   connect(layMul.area, propsBus_a.area) annotation (Line(
-      points={{0,-20},{0,-20},{0,40},{50,40}},
+      points={{0,-20},{0,40},{50,40}},
       color={0,0,127},
       smooth=Smooth.None), Text(
       string="%second",

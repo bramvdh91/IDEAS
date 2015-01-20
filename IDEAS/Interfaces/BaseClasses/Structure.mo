@@ -5,22 +5,26 @@ partial model Structure "Partial model for building structure models"
     "Simulation information manager for climate data"
     annotation (Placement(transformation(extent={{130,-100},{150,-80}})));
 
+  replaceable package Medium = IDEAS.Media.Air
+    constrainedby Modelica.Media.Interfaces.PartialMedium
+    "Medium in the component"
+      annotation (choicesAllMatching = true);
+
   // Building characteristics  //////////////////////////////////////////////////////////////////////////
 
   parameter Integer nZones(min=1)
     "Number of conditioned thermal zones in the building";
-  parameter Integer nEmb(min=1) = nZones
-    "Number of embedded systems in the building";
+  parameter Integer nEmb(min=0) "Number of embedded systems in the building";
   parameter Modelica.SIunits.Area ATrans=100
     "Transmission heat loss area of the residential unit";
-  parameter Modelica.SIunits.Area[nZones] AZones=ones(nZones)*100
+  parameter Modelica.SIunits.Area[nZones] AZones = ones(nZones)*100
     "Conditioned floor area of the zones";
-  parameter Modelica.SIunits.Volume[nZones] VZones=ones(nZones)*300
+  parameter Modelica.SIunits.Volume[nZones] VZones = AZones .*3
     "Conditioned volume of the zones based on external dimensions";
   final parameter Modelica.SIunits.Length C=sum(VZones)/ATrans
     "Building compactness";
 
-  final parameter Modelica.SIunits.Temperature[nZones] T_start
+  parameter Modelica.SIunits.Temperature[nZones] T_start
     "Operative zonal start temperatures";
 
   // Interfaces  ///////////////////////////////////////////////////////////////////////////////////////
@@ -37,9 +41,15 @@ partial model Structure "Partial model for building structure models"
     "Construction nodes for heat gains by embedded layers" annotation (
       Placement(transformation(extent={{140,50},{160,70}}), iconTransformation(
           extent={{140,50},{160,70}})));
-  Modelica.Blocks.Interfaces.RealOutput[nZones] TSensor
+  Modelica.Blocks.Interfaces.RealOutput[nZones] TSensor(final quantity="ThermodynamicTemperature",unit="K",displayUnit="degC", min=0)
     "Sensor temperature of the zones"
     annotation (Placement(transformation(extent={{146,-70},{166,-50}})));
+  Fluid.Interfaces.FlowPort_b[nZones] flowPort_Out(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{-30,90},{-10,110}})));
+  Fluid.Interfaces.FlowPort_a[nZones] flowPort_In(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{10,90},{30,110}})));
+  outer Modelica.Fluid.System system
+  annotation (Placement(transformation(extent={{100,-100},{120,-80}})));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false, extent={{-150,-100},
             {150,100}}), graphics={
         Rectangle(

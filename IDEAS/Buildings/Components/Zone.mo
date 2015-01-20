@@ -2,20 +2,25 @@ within IDEAS.Buildings.Components;
 model Zone "thermal building zone"
 
   extends IDEAS.Buildings.Components.Interfaces.StateZone;
+  extends IDEAS.Fluid.Interfaces.LumpedVolumeDeclarations(redeclare package
+      Medium =
+        IDEAS.Media.Air);
+
+  outer Modelica.Fluid.System system
+    annotation (Placement(transformation(extent={{-80,80},{-60,100}})));
 
   parameter Modelica.SIunits.Volume V "Total zone air volume";
-  parameter Real n50=0.6
+  parameter Real n50(min=0.01)=0.4
     "n50 value cfr airtightness, i.e. the ACH at a pressure diffence of 50 Pa";
   parameter Real corrCV=5 "Multiplication factor for the zone air capacity";
-  parameter Modelica.SIunits.Temperature TOpStart=297.15;
 
   parameter Boolean linear=true;
 
   final parameter Modelica.SIunits.Power QNom=1012*1.204*V/3600*n50/20*(273.15
-       + 21 - sim.city.Tdes)
-    "Design heat losses at reference outdoor temperature";
+       + 21 - sim.Tdes) "Design heat losses at reference outdoor temperature";
+  final parameter Modelica.SIunits.MassFlowRate m_flow_nominal = 0.1*1.224*V/3600;
 
-  Modelica.SIunits.Temperature TAir=conDistr.TCon;
+  Modelica.SIunits.Temperature TAir=senTem.T;
   Modelica.SIunits.Temperature TStar=radDistr.TRad;
 
 protected
@@ -25,16 +30,14 @@ protected
         extent={{10,10},{-10,-10}},
         rotation=-90,
         origin={-54,-44})));
-  IDEAS.Buildings.Components.BaseClasses.MixedAir conDistr(
-    final nSurf=nSurf,
-    final V=V,
-    final corrCV=corrCV) "convective part of the zone"
-    annotation (Placement(transformation(extent={{-2,10},{-22,30}})));
-  IDEAS.Buildings.Components.BaseClasses.AirLeakage vent(final n50=n50,final V=
-        V) "zone air leakage" annotation (Placement(transformation(
-        extent={{-10,-10},{10,10}},
-        rotation=90,
-        origin={10,42})));
+  BaseClasses.AirLeakage airLeakage(
+    redeclare package Medium = Medium,
+    m_flow_nominal=V/3600*n50/20,
+    V=V,
+    n50=n50,
+    allowFlowReversal=allowFlowReversal,
+    show_T=false)
+    annotation (Placement(transformation(extent={{40,30},{60,50}})));
   IDEAS.Buildings.Components.BaseClasses.ZoneLwDistribution radDistrLw(final
       nSurf=nSurf, final linear=linear)
     "internal longwave radiative heat exchange" annotation (Placement(
@@ -44,40 +47,45 @@ protected
         origin={-54,-10})));
   Modelica.Blocks.Math.Sum sum(
     nin=2,
-    k={0.5,0.5},
-    y(start=TOpStart))
+    k={0.5,0.5})
     annotation (Placement(transformation(extent={{0,-66},{12,-54}})));
+  Fluid.MixingVolumes.MixingVolume         vol(
+    V=V,
+    m_flow_nominal=m_flow_nominal,
+    nPorts=if allowFlowReversal then 4 else 2,
+    redeclare package Medium = Medium,
+    energyDynamics=energyDynamics,
+    massDynamics=massDynamics,
+    p_start=p_start,
+    T_start=T_start,
+    X_start=X_start,
+    C_start=C_start,
+    C_nominal=C_nominal,
+    allowFlowReversal=allowFlowReversal,
+    mFactor=corrCV)                            annotation (Placement(
+        transformation(
+        extent={{-10,-10},{10,10}},
+        rotation=180,
+        origin={-10,30})));
+public
+  Fluid.Interfaces.FlowPort_b flowPort_Out(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{-30,90},{-10,110}})));
+  Fluid.Interfaces.FlowPort_a flowPort_In(redeclare package Medium = Medium)
+    annotation (Placement(transformation(extent={{10,90},{30,110}})));
+protected
+  Modelica.Thermal.HeatTransfer.Sensors.TemperatureSensor senTem
+    annotation (Placement(transformation(extent={{0,-28},{-16,-12}})));
+  parameter Boolean allowFlowReversal=system.allowFlowReversal
+    "= true to allow flow reversal in zone, false restricts to design direction (port_a -> port_b)."
+    annotation(Dialog(tab="Assumptions"));
 equation
-  connect(surfRad, radDistr.radSurfTot) annotation (Line(
-      points={{-100,-60},{-74,-60},{-74,-26},{-54,-26},{-54,-34}},
-      color={191,0,0},
-      smooth=Smooth.None));
-  connect(radDistr.iSolDir, iSolDir) annotation (Line(
-      points={{-58,-54},{-58,-80},{-20,-80},{-20,-100}},
-      color={191,0,0},
-      smooth=Smooth.None));
-  connect(radDistr.iSolDif, iSolDif) annotation (Line(
-      points={{-54,-54},{-54,-76},{20,-76},{20,-100}},
-      color={191,0,0},
-      smooth=Smooth.None));
-  connect(surfCon, conDistr.conSurf) annotation (Line(
-      points={{-100,-30},{-30,-30},{-30,20},{-22,20}},
-      color={191,0,0},
-      smooth=Smooth.None));
-  connect(conDistr.conGain, gainCon) annotation (Line(
-      points={{-2,20},{49,20},{49,-30},{100,-30}},
-      color={191,0,0},
-      smooth=Smooth.None));
+
   connect(radDistr.radGain, gainRad) annotation (Line(
       points={{-50.2,-54},{-50,-54},{-50,-72},{80,-72},{80,-60},{100,-60}},
       color={191,0,0},
       smooth=Smooth.None));
-  connect(vent.port_a, conDistr.conGain) annotation (Line(
-      points={{10,32},{10,20},{-2,20}},
-      color={191,0,0},
-      smooth=Smooth.None));
-  connect(surfRad, radDistrLw.port_a) annotation (Line(
-      points={{-100,-60},{-74,-60},{-74,-26},{-54,-26},{-54,-20}},
+  connect(propsBus[:].surfRad, radDistrLw.port_a) annotation (Line(
+      points={{-100,40},{-74,40},{-74,-26},{-54,-26},{-54,-20}},
       color={191,0,0},
       smooth=Smooth.None));
 
@@ -87,10 +95,6 @@ equation
       smooth=Smooth.None));
   connect(radDistr.TRad, sum.u[1]) annotation (Line(
       points={{-44,-44},{-22,-44},{-22,-60.6},{-1.2,-60.6}},
-      color={0,0,127},
-      smooth=Smooth.None));
-  connect(conDistr.TCon, sum.u[2]) annotation (Line(
-      points={{-12,10},{-12,-62},{-1.2,-62},{-1.2,-59.4}},
       color={0,0,127},
       smooth=Smooth.None));
 
@@ -129,8 +133,67 @@ equation
       string="%first",
       index=-1,
       extent={{-6,3},{-6,3}}));
+  connect(vol.heatPort, gainCon) annotation (Line(
+      points={{0,30},{10,30},{10,-30},{100,-30}},
+      color={191,0,0},
+      smooth=Smooth.None));
+
+for i in 1:nSurf loop
+  connect(radDistr.iSolDir, propsBus[i].iSolDir) annotation (Line(
+      points={{-58,-54},{-58,-80},{-100,-80},{-100,40}},
+      color={191,0,0},
+      smooth=Smooth.None));
+  connect(radDistr.iSolDif, propsBus[i].iSolDif) annotation (Line(
+      points={{-54,-54},{-54,-76},{-100,-76},{-100,40}},
+      color={191,0,0},
+      smooth=Smooth.None));
+  connect(propsBus[i].surfCon, vol.heatPort) annotation (Line(
+      points={{-100,40},{-46,40},{-46,12},{10,12},{10,30},{4.44089e-16,30}},
+      color={191,0,0},
+      smooth=Smooth.None));
+end for;
+  connect(flowPort_In, vol.ports[1]) annotation (Line(
+      points={{20,100},{20,40},{-10,40}},
+      color={0,128,255},
+      smooth=Smooth.None));
+  connect(flowPort_Out, vol.ports[2]) annotation (Line(
+      points={{-20,100},{-20,40},{-10,40}},
+      color={0,128,255},
+      smooth=Smooth.None));
+  connect(senTem.port, gainCon) annotation (Line(
+      points={{0,-20},{10,-20},{10,-30},{100,-30}},
+      color={191,0,0},
+      smooth=Smooth.None));
+  connect(senTem.T, sum.u[2]) annotation (Line(
+      points={{-16,-20},{-18,-20},{-18,-59.4},{-1.2,-59.4}},
+      color={0,0,127},
+      smooth=Smooth.None));
+      if allowFlowReversal then
+  connect(airLeakage.port_a, vol.ports[4]) annotation (Line(
+      points={{40,40},{-10,40}},
+      color={0,127,255},
+      smooth=Smooth.None));
+  connect(airLeakage.port_b, vol.ports[3]) annotation (Line(
+      points={{60,40},{70,40},{70,14},{-32,14},{-32,40},{-10,40}},
+      color={0,127,255},
+      smooth=Smooth.None));
+      else
+  connect(airLeakage.port_a, vol.ports[2]) annotation (Line(
+      points={{40,40},{-10,40}},
+      color={0,127,255},
+      smooth=Smooth.None));
+  connect(airLeakage.port_b, vol.ports[1]) annotation (Line(
+      points={{60,40},{70,40},{70,14},{-32,14},{-32,40},{-10,40}},
+      color={0,127,255},
+      smooth=Smooth.None));
+      end if;
+  connect(radDistr.radSurfTot, radDistrLw.port_a) annotation (Line(
+      points={{-54,-34},{-54,-20}},
+      color={191,0,0},
+      smooth=Smooth.None));
   annotation (
-    Icon(graphics),
+    Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
+         graphics),
     Documentation(info="<html>
 <p><h4><font color=\"#008000\">General description</font></h4></p>
 <p><h5>Goal</h5></p>
@@ -144,6 +207,6 @@ equation
 <p><h4><font color=\"#008000\">Validation </font></h4></p>
 <p>By means of the <code>BESTEST.mo</code> examples in the <code>Validation.mo</code> package.</p>
 </html>"),
-    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
-            100,100}}), graphics));
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
+            100}}),     graphics));
 end Zone;

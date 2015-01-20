@@ -1,24 +1,8 @@
 within IDEAS.Buildings.Components;
 model SlabOnGround "opaque floor on ground slab"
 
-  extends IDEAS.Buildings.Components.Interfaces.StateWall;
+  extends IDEAS.Buildings.Components.Interfaces.StateWallNoSol;
 
-  replaceable parameter Data.Interfaces.Construction constructionType
-    constrainedby Data.Interfaces.Construction(final insulationType=
-        insulationType, final insulationTickness=insulationThickness)
-    "Type of building construction" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,72},{-34,76}})),
-    Dialog(group="Construction details"));
-  replaceable parameter Data.Interfaces.Insulation insulationType
-    constrainedby Data.Interfaces.Insulation(final d=insulationThickness)
-    "Type of thermal insulation" annotation (
-    __Dymola_choicesAllMatching=true,
-    Placement(transformation(extent={{-38,84},{-34,88}})),
-    Dialog(group="Construction details"));
-  parameter Modelica.SIunits.Length insulationThickness
-    "Thermal insulation thickness"
-    annotation (Dialog(group="Construction details"));
   parameter Modelica.SIunits.Area AWall "Total wall area";
   parameter Modelica.SIunits.Area PWall "Total wall perimeter";
   parameter Modelica.SIunits.Angle inc
@@ -28,7 +12,7 @@ model SlabOnGround "opaque floor on ground slab"
 
   final parameter Real U_value=1/(1/8 + sum(constructionType.mats.R) + 1/25)
     "Wall U-value";
-  final parameter Modelica.SIunits.Power QNom=U_value*AWall*(273.15 + 21 - sim.city.TdesGround)
+  final parameter Modelica.SIunits.Power QNom=U_value*AWall*(273.15 + 21 - sim.TdesGround)
     "Design heat losses at reference outdoor temperature";
 
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a port_emb
@@ -88,6 +72,8 @@ public
   Modelica.Thermal.HeatTransfer.Sources.FixedHeatFlow fixedHeatFlow(Q_flow=0,
       T_ref=284.15)
     annotation (Placement(transformation(extent={{-70,-40},{-50,-20}})));
+  outer SimInfoManager sim "Simulation information manager for climate data"
+    annotation (Placement(transformation(extent={{36,-102},{56,-82}})));
 equation
 
   periodicFlow.Q_flow = -Qm;
@@ -101,12 +87,12 @@ equation
       color={191,0,0},
       smooth=Smooth.None));
 
-  connect(intCon.port_b, surfCon_a) annotation (Line(
-      points={{40,-30},{50,-30}},
+  connect(intCon.port_b, propsBus_a.surfCon) annotation (Line(
+      points={{40,-30},{46,-30},{46,40},{50,40}},
       color={191,0,0},
       smooth=Smooth.None));
-  connect(layMul.port_b, surfRad_a) annotation (Line(
-      points={{10,-30},{16,-30},{16,-60},{50,-60}},
+  connect(layMul.port_b, propsBus_a.surfRad) annotation (Line(
+      points={{10,-30},{16,-30},{16,40},{50,40}},
       color={191,0,0},
       smooth=Smooth.None));
   connect(layMul.port_gain, port_emb) annotation (Line(
