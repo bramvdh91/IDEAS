@@ -10,6 +10,16 @@ record General "General parameters of the borefield"
       "modelica://IDEAS/Fluid/HeatExchangers/GroundHeatExchangers/Borefield/Data/Records/General.mo")
     "Computer record path";
 
+  parameter Boolean singleUTube = true
+    "True if use single U-tube, false if use double U-tube";
+  parameter Boolean parallel2UTube = true
+    "True if the double u-tube is connected in parallel in each borehole.";
+
+  parameter Boolean use_Rb = false
+    "True if the value borehole thermal resistance Rb should be given and used";
+  parameter Real Rb(unit="(m.K)/W") = 0.14
+    "Borehole thermal resistance Rb. Only to fill in if known";
+
   parameter SI.Temperature T_start=283.15
     "Initial temperature of the borefield (grout and soil)";
   parameter SI.MassFlowRate m_flow_nominal_bh=0.3
@@ -27,7 +37,6 @@ record General "General parameters of the borefield"
     annotation (Dialog(group="Borehole"));
 
   parameter Integer nbSer=1
-    "DO NOT CHANGE! NOT YET SUPPORTED. Number of boreholes in series."
     annotation (Dialog(group="Borehole"));
 
   parameter Real[nbBh,2] cooBh={{0,0}}
@@ -35,7 +44,7 @@ record General "General parameters of the borefield"
     annotation (Dialog(group="Borehole"));
 
   // -- Tube
-  parameter SI.Radius rTub=0.02 "Radius of the tubes"
+  parameter SI.Radius rTub=0.02 "Outer radius of the tubes"
     annotation (Dialog(group="Tubes"));
   parameter SI.ThermalConductivity kTub=0.5 "Thermal conductivity of the tube"
     annotation (Dialog(group="Tubes"));
@@ -59,8 +68,7 @@ record General "General parameters of the borefield"
   //------------------------- Advanced parameters -----------------------------------------------------------------------------------------------------------------------------
 
   /*--------Discretization: */
-  parameter Integer nVer=1
-    "DO NOT CHANGE! NOT YET SUPPORTED. Number of segments used for discretization in the vertical direction. Only important for the short-term simulation. nVer>1 not yet supported"
+  parameter Integer nVer=10
     annotation (Dialog(tab="Discretization"));
   parameter Integer nHor(min=1) = 10
     "Number of state variables in each horizontal layer of the soil"

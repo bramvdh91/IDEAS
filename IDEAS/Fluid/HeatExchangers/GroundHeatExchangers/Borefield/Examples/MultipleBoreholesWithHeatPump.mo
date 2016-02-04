@@ -14,8 +14,11 @@ model MultipleBoreholesWithHeatPump
     annotation (Placement(transformation(extent={{74,74},{94,94}})));
   parameter Integer lenSim=3600*24*20 "length of the simulation";
 
-  MultipleBoreHoles multipleBoreholes(lenSim=lenSim, bfData=bfData,
-    redeclare package Medium = Medium) "borefield"
+  MultipleBoreHolesUTube multipleBoreholes(
+    lenSim=lenSim,
+    bfData=bfData,
+    redeclare package Medium = Medium,
+    dp_nominal=1000) "borefield"
     annotation (Placement(transformation(extent={{12,-78},{-28,-38}})));
 
   Movers.Pump                           pum(
@@ -33,14 +36,13 @@ model MultipleBoreholesWithHeatPump
   IDEAS.Fluid.Production.HP_WaterWater_OnOff heatPumpOnOff(
     redeclare package Medium1 = Medium,
     redeclare package Medium2 = Medium,
-    allowFlowReversal=false,
     onOff=true,
     use_scaling=true,
-    redeclare IDEAS.Fluid.Production.BaseClasses.VitoCal300GBWS301dotA45
-      heatPumpData,
     use_onOffSignal=true,
-    P_the_nominal=bfData.PThe_nominal/2)
-                     annotation (Placement(transformation(
+    P_the_nominal=bfData.PThe_nominal/2,
+    redeclare
+      IDEAS.Fluid.Production.Data.PerformanceMaps.VitoCal300GBWS301dotA45
+      heatPumpData)  annotation (Placement(transformation(
         extent={{15,-17},{-15,17}},
         rotation=180,
         origin={1,25})));
@@ -66,10 +68,10 @@ model MultipleBoreholesWithHeatPump
     p=200000)
     annotation (Placement(transformation(extent={{-42,70},{-22,90}})));
   Modelica.Blocks.Sources.Sine sine(
-    freqHz=1/5000,
     amplitude=4,
     offset=273.15 + 30,
-    startTime=2000)
+    startTime=2000,
+    freqHz=1/50000)
     annotation (Placement(transformation(extent={{-76,70},{-56,90}})));
   Sensors.TemperatureTwoPort TSen_pri(
     redeclare package Medium = Medium,
@@ -89,7 +91,7 @@ equation
       color={0,127,255},
       smooth=Smooth.None));
   connect(booleanPulse.y,heatPumpOnOff. on) annotation (Line(
-      points={{-1,-16},{-2,-16},{-2,2},{-2,6},{-2,6},{-2,6.64}},
+      points={{-1,-16},{-2,-16},{-2,6.64}},
       color={255,0,255},
       smooth=Smooth.None));
   connect(bou.ports[1],pump. port_a) annotation (Line(
@@ -132,5 +134,7 @@ equation
     Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
             100,100}}), graphics),
     experiment(StopTime=1.7e+006, __Dymola_NumberOfIntervals=100),
-    __Dymola_experimentSetupOutput);
+    __Dymola_experimentSetupOutput,
+    __Dymola_Commands(file="../../IDEAS/IDEAS/Resources/Scripts/Dymola/Fluid/HeatExchangers/GroundHeatExchangers/Borefield/Examples/MultipleBoreholesWithHeatPump.mos"
+        "Simulate and plot"));
 end MultipleBoreholesWithHeatPump;

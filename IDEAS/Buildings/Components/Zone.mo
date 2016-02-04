@@ -1,27 +1,42 @@
 within IDEAS.Buildings.Components;
 model Zone "thermal building zone"
-
-  extends IDEAS.Buildings.Components.Interfaces.StateZone;
+  extends IDEAS.Buildings.Components.Interfaces.StateZone(Eexpr(y=E));
   extends IDEAS.Fluid.Interfaces.LumpedVolumeDeclarations(redeclare package
-      Medium =
-        IDEAS.Media.Air);
+      Medium = IDEAS.Media.Air);
 
   outer Modelica.Fluid.System system
     annotation (Placement(transformation(extent={{-80,80},{-60,100}})));
+  parameter Boolean allowFlowReversal=system.allowFlowReversal
+    "= true to allow flow reversal in zone, false restricts to design direction (port_a -> port_b)."
+    annotation(Dialog(tab="Assumptions"));
 
   parameter Modelica.SIunits.Volume V "Total zone air volume";
   parameter Real n50(min=0.01)=0.4
     "n50 value cfr airtightness, i.e. the ACH at a pressure diffence of 50 Pa";
   parameter Real corrCV=5 "Multiplication factor for the zone air capacity";
 
-  parameter Boolean linear=true;
+  parameter Boolean linearise=true
+    "Linearized computation of long wave radiation";
 
-  final parameter Modelica.SIunits.Power QNom=1012*1.204*V/3600*n50/20*(273.15
-       + 21 - sim.Tdes) "Design heat losses at reference outdoor temperature";
+  final parameter Modelica.SIunits.Power QInf_design=1012*1.204*V/3600*n50/20*(273.15
+       + 21 - sim.Tdes)
+    "Design heat losses from infiltration at reference outdoor temperature";
   final parameter Modelica.SIunits.MassFlowRate m_flow_nominal = 0.1*1.224*V/3600;
+  final parameter Modelica.SIunits.Power QRH_design=A*fRH
+    "Additional power required to compensate for the effects of intermittent heating";
+  parameter Real fRH=11
+    "Reheat factor for calculation of design heat load, (EN 12831, table D.10 Annex D)"
+                                                                                        annotation(Dialog(group="Design heat load"));
+  parameter Modelica.SIunits.Area A = 0 "Total conditioned floor area" annotation(Dialog(group="Design heat load"));
+
+  Modelica.SIunits.Power QTra_design=sum(propsBus.QTra_design)
+    "Total design transmission heat losses for the zone";
+  final parameter Modelica.SIunits.Power Q_design(fixed=false)
+    "Total design heat losses for the zone";
 
   Modelica.SIunits.Temperature TAir=senTem.T;
   Modelica.SIunits.Temperature TStar=radDistr.TRad;
+  Modelica.SIunits.Energy E = vol.dynBal.U;
 
 protected
   IDEAS.Buildings.Components.BaseClasses.ZoneLwGainDistribution radDistr(final
@@ -39,15 +54,13 @@ protected
     show_T=false)
     annotation (Placement(transformation(extent={{40,30},{60,50}})));
   IDEAS.Buildings.Components.BaseClasses.ZoneLwDistribution radDistrLw(final
-      nSurf=nSurf, final linear=linear)
+      nSurf=nSurf, final linearise=linearise)
     "internal longwave radiative heat exchange" annotation (Placement(
         transformation(
         extent={{10,-10},{-10,10}},
         rotation=90,
         origin={-54,-10})));
-  Modelica.Blocks.Math.Sum sum(
-    nin=2,
-    k={0.5,0.5})
+  Modelica.Blocks.Math.Sum summation(nin=2, k={0.5,0.5})
     annotation (Placement(transformation(extent={{0,-66},{12,-54}})));
   Fluid.MixingVolumes.MixingVolume         vol(
     V=V,
@@ -62,22 +75,18 @@ protected
     C_start=C_start,
     C_nominal=C_nominal,
     allowFlowReversal=allowFlowReversal,
-    mFactor=corrCV)                            annotation (Placement(
+    mSenFac=corrCV)                            annotation (Placement(
         transformation(
         extent={{-10,-10},{10,10}},
         rotation=180,
         origin={-10,30})));
-public
-  Fluid.Interfaces.FlowPort_b flowPort_Out(redeclare package Medium = Medium)
-    annotation (Placement(transformation(extent={{-30,90},{-10,110}})));
-  Fluid.Interfaces.FlowPort_a flowPort_In(redeclare package Medium = Medium)
-    annotation (Placement(transformation(extent={{10,90},{30,110}})));
+
 protected
   Modelica.Thermal.HeatTransfer.Sensors.TemperatureSensor senTem
     annotation (Placement(transformation(extent={{0,-28},{-16,-12}})));
-  parameter Boolean allowFlowReversal=system.allowFlowReversal
-    "= true to allow flow reversal in zone, false restricts to design direction (port_a -> port_b)."
-    annotation(Dialog(tab="Assumptions"));
+
+initial equation
+  Q_design=QInf_design+QRH_design+QTra_design; //Total design load for zone (additional ventilation losses are calculated in the ventilation system)
 equation
 
   connect(radDistr.radGain, gainRad) annotation (Line(
@@ -85,49 +94,49 @@ equation
       color={191,0,0},
       smooth=Smooth.None));
   connect(propsBus[:].surfRad, radDistrLw.port_a) annotation (Line(
-      points={{-100,40},{-74,40},{-74,-26},{-54,-26},{-54,-20}},
+      points={{-100.1,39.9},{-74,39.9},{-74,-26},{-54,-26},{-54,-20}},
       color={191,0,0},
       smooth=Smooth.None));
-
-  connect(sum.y, TSensor) annotation (Line(
+  connect(summation.y, TSensor) annotation (Line(
       points={{12.6,-60},{59.3,-60},{59.3,0},{106,0}},
       color={0,0,127},
       smooth=Smooth.None));
-  connect(radDistr.TRad, sum.u[1]) annotation (Line(
+  connect(radDistr.TRad, summation.u[1]) annotation (Line(
       points={{-44,-44},{-22,-44},{-22,-60.6},{-1.2,-60.6}},
       color={0,0,127},
       smooth=Smooth.None));
 
   connect(propsBus.area, radDistr.area) annotation (Line(
-      points={{-100,40},{-82,40},{-82,-40},{-64,-40}},
+      points={{-100.1,39.9},{-82,39.9},{-82,-40},{-64,-40}},
       color={127,0,0},
       smooth=Smooth.None), Text(
       string="%first",
       index=-1,
       extent={{-6,3},{-6,3}}));
   connect(propsBus.area, radDistrLw.A) annotation (Line(
-      points={{-100,40},{-82,40},{-82,-14},{-64,-14}},
+      points={{-100.1,39.9},{-82,39.9},{-82,-14},{-64,-14}},
       color={127,0,0},
       smooth=Smooth.None), Text(
       string="%first",
       index=-1,
       extent={{-6,3},{-6,3}}));
   connect(propsBus.epsLw, radDistrLw.epsLw) annotation (Line(
-      points={{-100,40},{-82,40},{-82,-10},{-64,-10}},
+      points={{-100.1,39.9},{-82,39.9},{-82,-10},{-64,-10}},
       color={127,0,0},
       smooth=Smooth.None), Text(
       string="%first",
       index=-1,
       extent={{-6,3},{-6,3}}));
+
   connect(propsBus.epsLw, radDistr.epsLw) annotation (Line(
-      points={{-100,40},{-82,40},{-82,-44},{-64,-44}},
+      points={{-100.1,39.9},{-82,39.9},{-82,-44},{-64,-44}},
       color={127,0,0},
       smooth=Smooth.None), Text(
       string="%first",
       index=-1,
       extent={{-6,3},{-6,3}}));
   connect(propsBus.epsSw, radDistr.epsSw) annotation (Line(
-      points={{-100,40},{-82,40},{-82,-48},{-64,-48}},
+      points={{-100.1,39.9},{-82,39.9},{-82,-48},{-64,-48}},
       color={127,0,0},
       smooth=Smooth.None), Text(
       string="%first",
@@ -140,15 +149,15 @@ equation
 
 for i in 1:nSurf loop
   connect(radDistr.iSolDir, propsBus[i].iSolDir) annotation (Line(
-      points={{-58,-54},{-58,-80},{-100,-80},{-100,40}},
+      points={{-58,-54},{-58,-80},{-100.1,-80},{-100.1,39.9}},
       color={191,0,0},
       smooth=Smooth.None));
   connect(radDistr.iSolDif, propsBus[i].iSolDif) annotation (Line(
-      points={{-54,-54},{-54,-76},{-100,-76},{-100,40}},
+      points={{-54,-54},{-54,-76},{-100.1,-76},{-100.1,39.9}},
       color={191,0,0},
       smooth=Smooth.None));
   connect(propsBus[i].surfCon, vol.heatPort) annotation (Line(
-      points={{-100,40},{-46,40},{-46,12},{10,12},{10,30},{4.44089e-16,30}},
+      points={{-100.1,39.9},{-46,39.9},{-46,12},{10,12},{10,30},{4.44089e-16,30}},
       color={191,0,0},
       smooth=Smooth.None));
 end for;
@@ -164,7 +173,7 @@ end for;
       points={{0,-20},{10,-20},{10,-30},{100,-30}},
       color={191,0,0},
       smooth=Smooth.None));
-  connect(senTem.T, sum.u[2]) annotation (Line(
+  connect(senTem.T, summation.u[2]) annotation (Line(
       points={{-16,-20},{-18,-20},{-18,-59.4},{-1.2,-59.4}},
       color={0,0,127},
       smooth=Smooth.None));
@@ -191,6 +200,7 @@ end for;
       points={{-54,-34},{-54,-20}},
       color={191,0,0},
       smooth=Smooth.None));
+
   annotation (
     Icon(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,100}}),
          graphics),
@@ -206,7 +216,8 @@ end for;
 <p>Transmitted shortwave solar radiation is distributed over all surfaces in the zone in a prescribed scale. This scale is an input value which may be dependent on the shape of the zone and the location of the windows, but literature <a href=\"IDEAS.Buildings.UsersGuide.References\">[Liesen 1997]</a> shows that the overall model is not significantly sensitive to this assumption.</p>
 <p><h4><font color=\"#008000\">Validation </font></h4></p>
 <p>By means of the <code>BESTEST.mo</code> examples in the <code>Validation.mo</code> package.</p>
+</html>", revisions="<html>
 </html>"),
     Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
-            100}}),     graphics));
+            100}})));
 end Zone;

@@ -10,37 +10,23 @@ partial model PartialSimInfoManager
   parameter Modelica.SIunits.Angle lon(displayUnit="deg") = 0.075921822461753;
   parameter Modelica.SIunits.Time timZonSta(displayUnit="h") = 3600
     "standard time zone";
+  parameter Integer numAzi=4 "Number of azimuth angles that are calculated"
+    annotation(Dialog(tab="Incidence angles"));
+  parameter Boolean computeConservationOfEnergy = false
+    "Add equations for verifying conservation of energy"
+    annotation(Evaluate=true,Dialog(tab="Conservation of energy"));
+  parameter Boolean strictConservationOfEnergy = false
+    "This adds an assert statement to make sure that energy is conserved"
+    annotation(Evaluate=true,Dialog(tab="Conservation of energy", enable = computeConservationOfEnergy));
+  parameter Boolean openSystemConservationOfEnergy = false
+    "Compute conservation of energy for open system"
+    annotation(Evaluate=true,Dialog(tab="Conservation of energy", enable = computeConservationOfEnergy));
 
+  parameter Modelica.SIunits.Energy Emax = 1
+    "Error bound for violation of conservation of energy"
+    annotation(Evaluate=true,Dialog(tab="Conservation of energy", enable = strictConservationOfEnergy));
   final parameter String filNamClim=filDir + filNam;
 
-  parameter Boolean occBeh=false
-    "put to true if  user behaviour is to be read from files"
-    annotation (Dialog(group="User behaviour"));
-
-  parameter Boolean DHW=false
-    "put to true if domestic how water (DHW) consumption is to be read from files"
-    annotation (Dialog(group="User behaviour"));
-  parameter Boolean PV=false
-    "put to true if photovoltaics is to be read from files "
-    annotation (Dialog(group="Photovoltaics"));
-
-protected
-  replaceable IDEAS.Occupants.Extern.Interfaces.Occ_Files occupants
-    constrainedby IDEAS.Occupants.Extern.Interfaces.Occ_Files
-    "Specifies the files with occupant behavior"
-    annotation (Dialog(group="User behaviour", enable=occBeh));
-
-public
-  parameter Integer nOcc=33 "Number of occupant profiles to be read"
-    annotation (Dialog(group="User behaviour", enable=occBeh));
-
-  parameter String fileNamePv="onePVpanel10min"
-    "Filename for photvoltaic profiles"
-    annotation (Dialog(group="Photovoltaics", enable=PV));
-  parameter Integer nPV=33 "Number of photovoltaic profiles"
-    annotation (Dialog(group="Photovoltaics", enable=PV));
-  parameter Integer PNom=1000 "Nominal power (W) of the photovoltaic profiles"
-    annotation (Dialog(group="Photovoltaics", enable=PV));
   parameter Boolean useTmy3Reader = true
     "Set to false if you do not want to use the TMY3 reader for providing data";
   final parameter Modelica.SIunits.Temperature Tdes = -8 + 273.15
@@ -85,6 +71,9 @@ public
   Modelica.SIunits.Time timSol "Solar time";
   Modelica.SIunits.Time timCal "Calendar time";
 
+  Modelica.SIunits.Energy Etot "Total internal energy";
+  Modelica.SIunits.Energy Qint "Total energy from boundary";
+
   Real hCon=IDEAS.Utilities.Math.Functions.spliceFunction(x=Va-5, pos= 7.1*abs(Va)^(0.78), neg=  4.0*Va + 5.6, deltax=0.5);
   Real TePow4 = Te^4;
   Real TskyPow4 = Tsky^4;
@@ -99,60 +88,16 @@ protected
     lon=lon,
     DST=false,
     ifSolCor=true)
-    annotation (Placement(transformation(extent={{-80,0},{-60,20}})));
+    annotation (Placement(transformation(extent={{-52,18},{-34,36}})));
 
-  Modelica.Blocks.Tables.CombiTable1Ds tabQCon(
-    final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
-    tableOnFile=true,
-    tableName="data",
-    fileName=filDir + occupants.filQCon,
-    columns=2:nOcc + 1) if occBeh
-    annotation (Placement(transformation(extent={{-40,-34},{-26,-20}})));
-  Modelica.Blocks.Tables.CombiTable1Ds tabQRad(
-    final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
-    tableOnFile=true,
-    tableName="data",
-    fileName=filDir + occupants.filQRad,
-    columns=2:nOcc + 1) if occBeh
-    annotation (Placement(transformation(extent={{-36,-38},{-22,-24}})));
-  Modelica.Blocks.Sources.CombiTimeTable tabPre(
-    final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
-    tableOnFile=true,
-    tableName="data",
-    fileName=filDir + occupants.filPres,
-    columns=2:nOcc + 1) if occBeh
-    annotation (Placement(transformation(extent={{0,-34},{14,-20}})));
-  Modelica.Blocks.Tables.CombiTable1Ds tabP(
-    final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
-    tableOnFile=true,
-    tableName="data",
-    fileName=filDir + occupants.filP,
-    columns=2:nOcc + 1) if occBeh
-    annotation (Placement(transformation(extent={{-40,-58},{-26,-44}})));
-  Modelica.Blocks.Tables.CombiTable1Ds tabQ(
-    final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
-    tableOnFile=true,
-    tableName="data",
-    fileName=filDir + occupants.filQ,
-    columns=2:nOcc + 1) if occBeh
-    annotation (Placement(transformation(extent={{-36,-62},{-22,-48}})));
-  Modelica.Blocks.Sources.CombiTimeTable tabDHW(
-    final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
-    tableOnFile=true,
-    tableName="data",
-    fileName=filDir + occupants.filDHW,
-    columns=2:nOcc + 1) if DHW
-    annotation (Placement(transformation(extent={{0,-58},{14,-44}})));
-  Modelica.Blocks.Tables.CombiTable1Ds tabPPV(
-    final smoothness=Modelica.Blocks.Types.Smoothness.LinearSegments,
-    tableOnFile=true,
-    tableName="data",
-    fileName=filDir + fileNamePv,
-    columns=2:nPV + 1) if PV
-    annotation (Placement(transformation(extent={{-36,-12},{-22,2}})));
-
-  BoundaryConditions.WeatherData.ReaderTMY3 weaDat(filNam=filNamClim, lat=lat, lon=lon, timZon=timZonSta) if useTmy3Reader
-    annotation (Placement(transformation(extent={{-38,10},{-18,30}})));
+  BoundaryConditions.WeatherData.ReaderTMY3 weaDat(
+  filNam=filNamClim,
+  lat=lat,
+  lon=lon,
+  timZon=timZonSta,
+  datRea1(tableName="data"),
+  datRea(tableName="data")) if useTmy3Reader
+    annotation (Placement(transformation(extent={{-18,36},{0,54}})));
   Utilities.Psychrometrics.X_pTphi XiEnv(use_p_in=false)
     annotation (Placement(transformation(extent={{-30,-96},{-10,-76}})));
   Modelica.Blocks.Sources.RealExpression phiEnv(y=relHum)
@@ -168,43 +113,80 @@ protected
   Climate.Meteo.Solar.BaseClasses.SkyClearness
                skyClearness
     annotation (Placement(transformation(extent={{-78,70},{-60,88}})));
-public
+
   Climate.Meteo.Solar.BaseClasses.SkyBrightnessCoefficients
                             skyBrightnessCoefficients
     annotation (Placement(transformation(extent={{-18,60},{0,78}})));
-protected
+
   Modelica.Blocks.Sources.RealExpression zenithAngle(y=angZen)
     annotation (Placement(transformation(extent={{-110,46},{-90,66}})));
   Modelica.Blocks.Sources.RealExpression solGloHorIn(y=solGloHor)
     annotation (Placement(transformation(extent={{-110,78},{-90,98}})));
   Modelica.Blocks.Sources.RealExpression solDifHorIn(y=solDifHor)
     annotation (Placement(transformation(extent={{-110,62},{-90,82}})));
-equation
 
-  connect(timMan.timCal, tabQCon.u) annotation (Line(
-      points={{-60,6},{-52,6},{-52,-27},{-41.4,-27}},
-      color={0,0,127},
-      smooth=Smooth.None));
-  connect(timMan.timCal, tabQRad.u) annotation (Line(
-      points={{-60,6},{-50,6},{-50,-31},{-37.4,-31}},
-      color={0,0,127},
-      smooth=Smooth.None));
-  connect(timMan.timCal, tabP.u) annotation (Line(
-      points={{-60,6},{-52,6},{-52,-51},{-41.4,-51}},
-      color={0,0,127},
-      smooth=Smooth.None));
-  connect(timMan.timCal, tabQ.u) annotation (Line(
-      points={{-60,6},{-50,6},{-50,-55},{-37.4,-55}},
-      color={0,0,127},
-      smooth=Smooth.None));
-  connect(timMan.timCal, tabPPV.u) annotation (Line(
-      points={{-60,6},{-48,6},{-48,-5},{-37.4,-5}},
-      color={0,0,127},
-      smooth=Smooth.None));
-  connect(timMan.timSol, weaDat.sol) annotation (Line(
-      points={{-60,10},{-50,10},{-50,12},{-38,12}},
-      color={0,0,127},
-      smooth=Smooth.None));
+public
+  Modelica.Blocks.Sources.RealExpression hour(y=angHou) "Hour angle"
+    annotation (Placement(transformation(extent={{-110,90},{-90,110}})));
+  Modelica.Blocks.Sources.RealExpression dec(y=angDec) "declination angle"
+    annotation (Placement(transformation(extent={{62,86},{34,106}})));
+  Modelica.Blocks.Sources.RealExpression solDirPerExp(y=solDirPer)
+    "Perpendicular direct solar radiation"
+    annotation (Placement(transformation(extent={{60,74},{34,94}})));
+protected
+  parameter SI.Angle inc[numAzi + 1]=cat(
+      1,
+      fill(ceilingInc,1),
+      fill(IDEAS.Constants.Wall, numAzi)) "surface inclination";
+public
+  Buildings.Components.Interfaces.WeaBus
+                                     weaBus(numSolBus=numAzi + 1)
+    annotation (Placement(transformation(extent={{4,62},{24,82}})));
+  Climate.Meteo.Solar.ShadedRadSol[
+                             numAzi+1] radSol(
+    inc=inc,
+    azi=cat(
+        1,
+        fill(ceilingInc,1),
+        fill(offsetAzi, numAzi) + (0:numAzi-1)*Modelica.Constants.pi*2/numAzi),
+    each numAzi=numAzi,
+    each lat=lat)
+             annotation (Placement(transformation(extent={{44,54},{64,74}})));
+public
+  Modelica.Blocks.Sources.RealExpression TskyPow4Expr(y=TskyPow4)
+    "Power 4 of sky temperature"
+    annotation (Placement(transformation(extent={{66,10},{40,30}})));
+  Modelica.Blocks.Sources.RealExpression TePow4Expr(y=TePow4)
+    "Power 4 of ambient temperature"
+    annotation (Placement(transformation(extent={{66,-6},{40,14}})));
+  Modelica.Blocks.Sources.RealExpression hConExpr(y=hCon)
+    "Exterior convective heat transfer coefficient"
+    annotation (Placement(transformation(extent={{66,24},{40,44}})));
+  Modelica.Blocks.Sources.RealExpression TdesExpr(y=Tdes)
+    annotation (Placement(transformation(extent={{66,-20},{40,0}})));
+  parameter SI.Angle offsetAzi=0 "Offset for the azimuth angle series"
+    annotation(Dialog(tab="Incidence angles"));
+  parameter SI.Angle ceilingInc = IDEAS.Constants.Ceiling
+    "Ceiling inclination angle"
+    annotation(Dialog(tab="Incidence angles"));
+  Modelica.Thermal.HeatTransfer.Sources.FixedTemperature fixedTemperature(T=10e6)
+    annotation (Placement(transformation(extent={{40,-80},{20,-60}})));
+  Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a Qgai
+    "Thermal gains in model"
+    annotation (Placement(transformation(extent={{-10,-110},{10,-90}})));
+  IDEAS.Buildings.Components.BaseClasses.EnergyPort E "Model internal energy"
+    annotation (Placement(transformation(extent={{-10,-110},{10,-90}})));
+
+initial equation
+  Etot=0;
+equation
+  if strictConservationOfEnergy and computeConservationOfEnergy then
+    assert(abs(Etot)<Emax, "Conservation of energy violation > Emax J!");
+  end if;
+
+  der(Qint) = Qgai.Q_flow;
+  Etot=  Qint-E.E;
+
   connect(TEnv.y,XiEnv. T) annotation (Line(
       points={{-49,-76},{-32,-76},{-32,-86}},
       color={0,0,127},
@@ -253,6 +235,75 @@ equation
       points={{-78,73.6},{-80,73.6},{-80,66},{-56,66},{-56,51},{-52,51}},
       color={0,0,127},
       smooth=Smooth.None));
+
+    connect(TskyPow4Expr.y, weaBus.TskyPow4) annotation (Line(
+      points={{38.7,20},{14,20},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(TePow4Expr.y, weaBus.TePow4) annotation (Line(
+      points={{38.7,4},{14,4},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  for i in 1:numAzi+1 loop
+    connect(radSol[i].weaBus, weaBus) annotation (Line(
+      points={{44,72},{14,72}},
+      color={255,204,51},
+      thickness=0.5,
+      smooth=Smooth.None));
+  end for;
+  connect(skyBrightnessCoefficients.F1, weaBus.F1) annotation (Line(
+      points={{0,74.4},{20,74.4},{20,72},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(skyBrightnessCoefficients.F2, weaBus.F2) annotation (Line(
+      points={{0,70.8},{26,70.8},{26,72},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(solGloHorIn.y, weaBus.solGloHor) annotation (Line(
+      points={{-89,88},{-88,88},{-88,98},{14,98},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(solDifHorIn.y, weaBus.solDifHor) annotation (Line(
+      points={{-89,72},{-88,72},{-88,100},{14,100},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(zenithAngle.y, weaBus.angZen) annotation (Line(
+      points={{-89,56},{-88,56},{-88,104},{14,104},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(hour.y, weaBus.angHou) annotation (Line(
+      points={{-89,100},{-32,100},{-32,72},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(dec.y, weaBus.angDec) annotation (Line(
+      points={{32.6,96},{26,96},{26,94},{14,94},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(solDirPerExp.y, weaBus.solDirPer) annotation (Line(
+      points={{32.7,84},{14,84},{14,72}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(TEnv.y, weaBus.Te) annotation (Line(
+      points={{-49,-76},{-50,-76},{-50,-56},{14.05,-56},{14.05,72.05}},
+      color={0,0,127},
+      smooth=Smooth.None,
+      visible=false));
+  connect(hConExpr.y, weaBus.hConExt) annotation (Line(
+      points={{38.7,34},{14.05,34},{14.05,72.05}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(TdesExpr.y, weaBus.Tdes) annotation (Line(
+      points={{38.7,-10},{14.05,-10},{14.05,72.05}},
+      color={0,0,127},
+      smooth=Smooth.None));
+  connect(radSol.solBus, weaBus.solBus) annotation (Line(
+      points={{64,64},{74,64},{74,50},{14.05,50},{14.05,72.05}},
+      color={255,204,51},
+      thickness=0.5,
+      smooth=Smooth.None));
+  connect(fixedTemperature.port, Qgai)
+    annotation (Line(points={{20,-70},{0,-70},{0,-100}},  color={191,0,0}));
+
   annotation (
     defaultComponentName="sim",
     defaultComponentPrefixes="inner",
@@ -329,9 +380,19 @@ equation
           textStyle={TextStyle.Italic},
           fontName="Bookman Old Style",
           textString="i")}),
-    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{
-            100,100}}),
-            graphics),
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100},{100,
+            100}})),
     Documentation(info="<html>
+</html>", revisions="<html>
+<ul>
+<li>
+June 14, 2015, Filip Jorissen:<br/>
+Adjusted implementation for computing conservation of energy.
+</li>
+<li>
+February 10, 2015 by Filip Jorissen:<br/>
+Adjusted implementation for grouping of solar calculations.
+</li>
+</ul>
 </html>"));
 end PartialSimInfoManager;

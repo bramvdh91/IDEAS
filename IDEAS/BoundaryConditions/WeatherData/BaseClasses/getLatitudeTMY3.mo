@@ -2,17 +2,18 @@ within IDEAS.BoundaryConditions.WeatherData.BaseClasses;
 function getLatitudeTMY3 "Gets the latitude from a TMY3 weather data file"
  input String filNam "Name of weather data file"
  annotation (Dialog(
-        __Dymola_loadSelector(filter="Weather files (*.mos)", caption=
+        loadSelector(filter="Weather files (*.mos)", caption=
             "Select weather file")));
  output Modelica.SIunits.Angle lat "Latitude from the weather file";
 protected
  Integer nexInd "Next index, used for error handling";
  String element "String representation of the returned element";
 algorithm
-  element := getHeaderElementTMY3(
+  element :=
+    IDEAS.BoundaryConditions.WeatherData.BaseClasses.getHeaderElementTMY3(
       filNam=filNam,
       start="#LOCATION",
-      name="longitude",
+      name=  "longitude",
       position=7);
    (nexInd, lat) :=Modelica.Utilities.Strings.Advanced.scanReal(
     string=element,

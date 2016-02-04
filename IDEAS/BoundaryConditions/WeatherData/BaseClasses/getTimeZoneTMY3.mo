@@ -2,17 +2,18 @@ within IDEAS.BoundaryConditions.WeatherData.BaseClasses;
 function getTimeZoneTMY3 "Gets the time zone from a TMY3 weather data file"
  input String filNam "Name of weather data file"
  annotation (Dialog(
-        __Dymola_loadSelector(filter="Weather files (*.mos)", caption=
+        loadSelector(filter="Weather files (*.mos)", caption=
             "Select weather file")));
  output Modelica.SIunits.Time timZon "Time zone from the weather file";
 protected
  Integer nexInd "Next index, used for error handling";
  String element "String representation of the returned element";
 algorithm
-  element := getHeaderElementTMY3(
+  element :=
+    IDEAS.BoundaryConditions.WeatherData.BaseClasses.getHeaderElementTMY3(
       filNam=filNam,
       start="#LOCATION",
-      name="longitude",
+      name=  "longitude",
       position=9);
    (nexInd, timZon) :=Modelica.Utilities.Strings.Advanced.scanReal(
     string=element,

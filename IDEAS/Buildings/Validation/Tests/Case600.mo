@@ -10,8 +10,6 @@ Simulation of all so far modeled BESTEST cases in a single simulation.
 */
 
   inner IDEAS.SimInfoManager sim(
-    occBeh=false,
-    PV=false,
     DST=false,
     filNam="BESTEST.TMY",
     lat=0.69464104229374,
@@ -40,5 +38,8 @@ Simulation of all so far modeled BESTEST cases in a single simulation.
           lineColor={85,0,0},
           fontName="Calibri",
           textStyle={TextStyle.Bold},
-          textString="BESTEST 600 Series")}));
+          textString="BESTEST 600 Series")}),
+    __Dymola_Commands(file=
+          "Resources/Scripts/Dymola/Buildings/Validation/Tests/Case600.mos"
+        "Simulate and plot"));
 end Case600;
