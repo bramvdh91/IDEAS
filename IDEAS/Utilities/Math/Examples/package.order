@@ -4,13 +4,15 @@ Biquadratic
 BooleanReplicator
 IntegerReplicator
 InverseXRegularized
+MovingAverage
 Polynominal
 PowerLinearized
 QuadraticLinear
 RegNonZeroPower
 SmoothBlocks
 SmoothExponential
+SmoothHeaviside
 SmoothLimit
+SmoothMin
 Splice
 VectorFunctions
-MovingAverage

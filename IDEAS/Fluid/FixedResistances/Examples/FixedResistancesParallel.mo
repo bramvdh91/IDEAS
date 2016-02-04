@@ -2,7 +2,7 @@ within IDEAS.Fluid.FixedResistances.Examples;
 model FixedResistancesParallel
   extends Modelica.Icons.Example;
 
- package Medium = IDEAS.Media.Water.Simple;
+ package Medium = IDEAS.Media.Water;
     Modelica.Blocks.Sources.Constant PAtm(k=101325)
       annotation (Placement(transformation(extent={{66,76},{86,96}})));
     Modelica.Blocks.Sources.Ramp P(
@@ -18,14 +18,14 @@ model FixedResistancesParallel
     linearized=false,
     from_dp=false)
              annotation (Placement(transformation(extent={{-28,30},{-8,50}})));
-  IDEAS.Fluid.Sources.Boundary_pT sou1(          redeclare package Medium =
-        Medium,
+  IDEAS.Fluid.Sources.Boundary_pT sou1(          redeclare package Medium
+      = Medium,
     T=293.15,
     nPorts=2,
     use_p_in=true)        annotation (Placement(transformation(extent={{-70,28},
             {-50,48}})));
-  IDEAS.Fluid.Sources.Boundary_pT sin1(          redeclare package Medium =
-        Medium,
+  IDEAS.Fluid.Sources.Boundary_pT sin1(          redeclare package Medium
+      = Medium,
     T=283.15,
     nPorts=2,
     use_p_in=true)        annotation (Placement(transformation(extent={{80,28},
@@ -85,6 +85,5 @@ equation
       color={0,0,127},
       smooth=Smooth.None));
     annotation (experiment(StopTime=1.0),
-__Dymola_Commands(file="modelica://IDEAS/Resources/Scripts/Dymola/Fluid/FixedResistances/Examples/FixedResistancesParallel.mos"
-        "Simulate and plot"));
+__Dymola_Commands(file="modelica://IDEAS/Resources/Scripts/Dymola/Fluid/FixedResistances/Examples/FixedResistancesParallel.mos" "Simulate and plot"));
 end FixedResistancesParallel;

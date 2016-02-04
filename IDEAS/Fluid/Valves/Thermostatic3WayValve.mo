@@ -41,7 +41,7 @@ protected
   Real delta_h "Enthalpy difference between port_a2 and port_a1";
   Real inv_delta_h "Regularized inverse of delta_h";
 
-  parameter Real delta_h_reg=dT_nominal/10*Medium.specificHeatCapacityCp(Medium.setState_pTX(Medium.p_default,Medium.T_default,Medium.X_default))
+  parameter Real delta_h_reg=dT_nominal/25*Medium.specificHeatCapacityCp(Medium.setState_pTX(Medium.p_default,Medium.T_default,Medium.X_default))
     "Enthalpy difference where regularization starts";
 
 equation
@@ -120,7 +120,7 @@ equation
 <h4>Typical use and important parameters</h4>
 <ol>
 <li>The parameter m sets the mass of the fluid contained by the valve. </li>
-<li>Parameter dT_nominal sets the nominal temperature difference of the inlet ports. It provides an estimate for when to start regularization: when the temperature difference accross the inlet ports is smaller than dT/10. Small dT_nominal values may lead to convergence errors, large dT_nominal values cause a greater error when the inlet temperatures are almost equal.</li>
+<li>Parameter dT_nominal sets the nominal temperature difference of the inlet ports. It provides an estimate for when to start regularization: when the temperature difference across the inlet ports is smaller than dT/10. Small dT_nominal values may lead to convergence errors, large dT_nominal values cause a greater error when the inlet temperatures are almost equal.</li>
 </ol>
 <h4>Options</h4>
 <ol>

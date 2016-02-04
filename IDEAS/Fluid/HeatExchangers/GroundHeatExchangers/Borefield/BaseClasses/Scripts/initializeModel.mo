@@ -15,6 +15,8 @@ function initializeModel
 protected
   String pathSave "Path of the saving folder";
 algorithm
+  translateModel("IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.BaseClasses.Scripts.shaBorefieldRecords");
+
   // --------------- Generate SHA-code and path
   sha := shaBorefieldRecords(
     soiPath=Modelica.Utilities.Strings.replace(
@@ -53,7 +55,7 @@ algorithm
     columns=gen.tBre_d + 1);
 
     annotation (Documentation(info="<html>
-    <p>  This function calculates the short-term wall temperature response of a borefield for given parameters and save it in a hidden folder C:\.BfData\ for windows and C:\.tmp\ for Linux.</p>
+    <p>  This function calculates the short-term wall temperature response of a borefield for given parameters and save it in a hidden folder C:\\.BfData\\ for windows and C:\\.tmp\\ for Linux.</p>
     <p> Firstly, a SHA-code of the records soi, fil and gen are computed and summed by the function shaBorefieldRecords. The algorithm checks then if the step response for these parameters already 
     exists in the temperory file. If not, a response vector is computed by the function ShortTimeResponseHX and saved under the name SHA+ShoTermData.mat.</p>
     <p> Remark: by calling the function, three 'true' should appear in the command window for:</p>
@@ -62,7 +64,7 @@ algorithm
     <li> simulation of model</li>
     <li> writing the data </li>
     </ul>
-    <p> If not, an error has occured!
+    <p> If not, an error has occurred!
     </p>
 </html>", revisions="<html>
 <ul>

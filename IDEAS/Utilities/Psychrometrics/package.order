@@ -1,5 +1,5 @@
-Functions
 Constants
+Density_pTX
 Phi_pTX
 SaturationPressure
 SaturationPressureLiquid
@@ -14,5 +14,6 @@ X_pTphi
 X_pW
 pW_TDewPoi
 pW_X
+Functions
 Examples
 BaseClasses

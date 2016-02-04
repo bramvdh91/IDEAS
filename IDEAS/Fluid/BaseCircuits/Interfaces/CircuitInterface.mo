@@ -11,9 +11,11 @@ partial model CircuitInterface "Partial circuit for base circuits"
     redeclare package Medium2 = Medium,
     final allowFlowReversal1 = allowFlowReversal,
     final allowFlowReversal2 = allowFlowReversal);
-  extends IDEAS.Fluid.Interfaces.LumpedVolumeDeclarations;
+  extends IDEAS.Fluid.Interfaces.LumpedVolumeDeclarations(
+    massDynamics=Modelica.Fluid.Types.Dynamics.SteadyState);
 
   //Parameters
+  parameter Integer tauTSensor = 120 "Time constant of the temperature sensors";
 
   //----Settings
   parameter Boolean includePipes=false
@@ -81,8 +83,12 @@ protected
     UA=UA,
     m=m/2,
     dp_nominal=dp,
+    energyDynamics=energyDynamics,
+    dynamicBalance=dynamicBalance,
     m_flow_nominal=m_flow_nominal,
-    redeclare package Medium = Medium) if includePipes
+    redeclare package Medium = Medium,
+    massDynamics=Modelica.Fluid.Types.Dynamics.SteadyState) if
+                                          includePipes
     annotation (Placement(transformation(
         extent={{10,-10},{-10,10}},
         rotation=180,
@@ -91,21 +97,26 @@ protected
     UA=UA,
     dp_nominal=dp,
     m=m/2,
+    energyDynamics=energyDynamics,
+    massDynamics=massDynamics,
+    dynamicBalance=dynamicBalance,
     m_flow_nominal=m_flow_nominal,
     redeclare package Medium = Medium) if includePipes
     annotation (Placement(transformation(extent={{10,-10},{-10,10}},
         rotation=0,
         origin={-40,-60})),                                            choicesAllMatching=true);
-  Sensors.TemperatureTwoPort senTemSup(m_flow_nominal=m_flow_nominal,
-      redeclare package Medium = Medium) if
-                                       measureSupplyT
+  Sensors.TemperatureTwoPort senTemSup(
+    m_flow_nominal=m_flow_nominal,
+    tau=tauTSensor,
+    redeclare package Medium = Medium) if measureSupplyT
     annotation (Placement(transformation(extent={{60,50},{80,70}})));
-  Sensors.TemperatureTwoPort senTemRet(m_flow_nominal=m_flow_nominal,
-      redeclare package Medium = Medium) if
-                                       measureReturnT
+  Sensors.TemperatureTwoPort senTemRet(
+    m_flow_nominal=m_flow_nominal,
+    tau=tauTSensor,
+    redeclare package Medium = Medium) if measureReturnT
     annotation (Placement(transformation(extent={{-60,-50},{-80,-70}})));
-equation
 
+equation
   connect(port_a1, pipeSupply.port_a) annotation (Line(
       points={{-100,60},{-90,60}},
       color={0,127,255},
@@ -154,6 +165,65 @@ equation
                                    Line(
           points={{-100,60},{100,60}},
           color={0,0,127},
-          smooth=Smooth.None)}), Diagram(coordinateSystem(preserveAspectRatio=false,
+          smooth=Smooth.None),
+        Rectangle(
+          extent={{-100,-50},{-80,-70}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          visible=includePipes),
+        Rectangle(
+          extent={{-10,10},{10,-10}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          origin={90,60},
+          rotation=180,
+          visible=includePipes),
+        Rectangle(
+          extent={{-10,10},{10,-10}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          origin={90,-60},
+          rotation=180,
+          visible=includePipes),
+        Rectangle(
+          extent={{-100,70},{-80,50}},
+          lineColor={0,0,0},
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          visible=includePipes),
+        Polygon(
+          points={{-80,70},{-80,50},{-72,60},{-80,70}},
+          lineColor={0,0,0},
+          smooth=Smooth.None,
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          visible=includePipes),
+        Polygon(
+          points={{-80,-50},{-80,-70},{-72,-60},{-80,-50}},
+          lineColor={0,0,0},
+          smooth=Smooth.None,
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          visible=includePipes),
+        Polygon(
+          points={{-4,10},{-4,-10},{4,0},{-4,10}},
+          lineColor={0,0,0},
+          smooth=Smooth.None,
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          origin={76,60},
+          rotation=180,
+          visible=includePipes),
+        Polygon(
+          points={{80,-50},{80,-70},{72,-60},{80,-50}},
+          lineColor={0,0,0},
+          smooth=Smooth.None,
+          fillColor={255,255,255},
+          fillPattern=FillPattern.Solid,
+          visible=includePipes)}),
+                                 Diagram(coordinateSystem(preserveAspectRatio=false,
           extent={{-100,-100},{100,100}}), graphics));
 end CircuitInterface;

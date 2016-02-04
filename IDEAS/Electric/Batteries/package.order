@@ -1,6 +1,8 @@
 UsersGuide
 Battery
-BatteryCtrlGeneral
-BatterySystem
-BatterySystemGeneral
+AC
+Control
+DC
+Partials
 Examples
+Validation
