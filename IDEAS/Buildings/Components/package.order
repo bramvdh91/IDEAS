@@ -5,6 +5,11 @@ SlabOnGround
 Window
 Zone
 Shading
-Examples
+ThermalBridges
+ZoneAirModels
+Comfort
+InternalGains
+OccupancyType
 Interfaces
 BaseClasses
+Examples

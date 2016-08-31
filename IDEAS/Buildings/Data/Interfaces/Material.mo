@@ -1,5 +1,5 @@
 within IDEAS.Buildings.Data.Interfaces;
-record Material "Properties of building materials"
+record Material "Template record for properties of building materials"
 
   extends Modelica.Icons.MaterialProperty;
 
@@ -10,6 +10,8 @@ record Material "Properties of building materials"
   parameter Modelica.SIunits.Emissivity epsLw = 0.85 "Longwave emisivity";
   parameter Modelica.SIunits.Emissivity epsSw = 0.85 "Shortwave emissivity";
   parameter Boolean gas=false "Boolean whether the material is a gas"
+    annotation(Evaluate=true);
+  parameter Boolean glass=false "Boolean whether the material is made of glass"
     annotation(Evaluate=true);
   parameter Modelica.SIunits.KinematicViscosity mhu = 0
     "Viscosity, i.e. if the material is a fluid";

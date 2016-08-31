@@ -3,7 +3,9 @@ record HeavyFloor "BESTEST Heavy floor"
 
   extends IDEAS.Buildings.Data.Interfaces.Construction(
     final nLay=2,
-    final locGain=2,
-    final mats={insulationType,Materials.ConcreteSlab(d=0.08)});
+    incLastLay = IDEAS.Types.Tilt.Floor,
+    final mats={
+      insulationType,
+      IDEAS.Buildings.Validation.Data.Materials.ConcreteSlab(d=0.08)});
 
 end HeavyFloor;

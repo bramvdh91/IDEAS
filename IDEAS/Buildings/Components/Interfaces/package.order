@@ -1,9 +1,8 @@
-DoubleShading
-PropsBus
+PartialZone
 SolBus
-StateShading
-StateWall
-StateWallNoSol
-StateZone
 WeaBus
 ZoneBus
+PartialSurface
+PartialOpaqueSurface
+WindowBus
+WindowDynamicsType

@@ -1,10 +1,11 @@
 UsersGuide
 Actuators
-BaseCircuits
+Chillers
 Delays
-Domestic_Hot_Water
+Taps
 FixedResistances
 HeatExchangers
+HeatPumps
 MassExchangers
 MixingVolumes
 Movers
@@ -12,7 +13,6 @@ Production
 Sensors
 Sources
 Storage
-Valves
 Types
 Examples
 Interfaces
