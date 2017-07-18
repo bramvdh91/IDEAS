@@ -4,15 +4,16 @@ model borefield8x1
 
   extends Modelica.Icons.Example;
 
-  parameter Modelica.SIunits.Temperature T_start = bfData.gen.T_start;
-  package Medium = Modelica.Media.Water.ConstantPropertyLiquidWater;
+  package Medium = IDEAS.Media.Water
+    "Water medium";
+  parameter Modelica.SIunits.Temperature T_start = bfData.gen.T_start
+    "Medium and bore field start temperature";
+  parameter Integer lenSim=3600*24*366 "length of the simulation";
 
   replaceable parameter
     Data.BorefieldData.SandStone_Bentonite_c8x1_h110_b5_d3600_T283
     bfData
     annotation (Placement(transformation(extent={{-100,80},{-80,100}})));
-  parameter Integer lenSim=3600*24*366 "length of the simulation";
-
   replaceable MultipleBoreHolesUTube borFie(
     lenSim=lenSim,
     redeclare package Medium = Medium,
@@ -44,12 +45,12 @@ model borefield8x1
     annotation (Placement(transformation(extent={{38,-50},{58,-30}})));
   IDEAS.Fluid.Movers.FlowControlled_m_flow pum(
     redeclare package Medium = Medium,
-    dynamicBalance=false,
     m_flow_nominal=bfData.m_flow_nominal,
     T_start=T_start,
-    motorCooledByFluid=false,
     addPowerToMedium=false,
-    filteredSpeed=false)
+    filteredSpeed=false,
+    energyDynamics=Modelica.Fluid.Types.Dynamics.SteadyState,
+    massDynamics=Modelica.Fluid.Types.Dynamics.SteadyState)
     annotation (Placement(transformation(extent={{-16,22},{-36,2}})));
   Modelica.Blocks.Sources.Constant mFlo(k=bfData.m_flow_nominal)
     annotation (Placement(transformation(extent={{-60,-18},{-48,-6}})));

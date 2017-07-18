@@ -2,11 +2,8 @@ within IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield;
 model MultipleBoreHolesUTube
   "Borefield model using single U-tube borehole heat exchanger configuration."
 
-  // Medium in borefield
-  extends
-    IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.Interfaces.partial_multipleBoreHoles;
-      replaceable BaseClasses.BoreHoles.SingleBoreHolesInSerie
-                                               borHolSer(
+  extends IDEAS.Fluid.HeatExchangers.GroundHeatExchangers.Borefield.Interfaces.partial_multipleBoreHoles;
+  replaceable BaseClasses.BoreHoles.SingleBoreHolesInSerie borHolSer(
     redeclare final package Medium = Medium,
     final soi=bfData.soi,
     final fil=bfData.fil,
@@ -18,8 +15,9 @@ model MultipleBoreHolesUTube
     final mSenFac=mSenFac,
     final use_TWall=true,
     final m_flow_nominal=m_flow_nominal/bfData.gen.nbBh*bfData.gen.nbSer,
-    final dp_nominal=dp_nominal) constrainedby
-    BaseClasses.BoreHoles.Interface.PartialSingleBoreholeSerie(
+    final dp_nominal=dp_nominal,
+    allowFlowReversal=allowFlowReversal)
+  constrainedby BaseClasses.BoreHoles.Interface.PartialSingleBoreholeSerie(
     redeclare package Medium = Medium,
      soi=bfData.soi,
      fil=bfData.fil,
@@ -31,7 +29,8 @@ model MultipleBoreHolesUTube
      mSenFac=mSenFac,
      use_TWall=true,
      m_flow_nominal=m_flow_nominal/bfData.gen.nbBh*bfData.gen.nbSer,
-     dp_nominal=dp_nominal) "NbSer boreholes in series"      annotation (Placement(transformation(
+     dp_nominal=dp_nominal,
+    allowFlowReversal=allowFlowReversal) "NbSer boreholes in series"      annotation (Placement(transformation(
         extent={{12,13},{-12,-13}},
         rotation=180,
         origin={-1,0})));

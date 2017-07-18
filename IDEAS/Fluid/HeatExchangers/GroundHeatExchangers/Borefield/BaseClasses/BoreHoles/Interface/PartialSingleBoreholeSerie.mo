@@ -31,7 +31,8 @@ partial model PartialSingleBoreholeSerie
     each final C_nominal=C_nominal,
     each final dynFil=dynFil,
     each final mSenFac=mSenFac,
-    each final use_TWall=use_TWall) constrainedby
+    each final use_TWall=use_TWall,
+    each final allowFlowReversal=allowFlowReversal) constrainedby
     Interface.PartialSingleBoreHole(
     each  m_flow_nominal=m_flow_nominal,
     each  T_start=T_start,
@@ -53,7 +54,8 @@ partial model PartialSingleBoreholeSerie
     each  C_nominal=C_nominal,
     each  dynFil=dynFil,
     each  mSenFac=mSenFac,
-    each  use_TWall=use_TWall) "Borehole heat exchanger"                 annotation (Placement(
+    each  use_TWall=use_TWall,
+    each allowFlowReversal=allowFlowReversal) "Borehole heat exchanger"                 annotation (Placement(
         transformation(extent={{-16,-16},{16,16}}, rotation=0)));
 
   Modelica.SIunits.Temperature TWallAve "Average borehole temperature";
@@ -73,7 +75,7 @@ equation
       color={0,127,255},
       smooth=Smooth.None));
       if use_TWall then
-        connect(TWall, borHol[1].TWall)
+        connect(TWall, borHol[i].TWall)
         annotation (Line(points={{0,110},{0,17.6}},          color={0,0,127}));
       end if;
     end for;
